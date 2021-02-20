@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class FishSchoolController : MonoBehaviour
 {
@@ -9,6 +10,10 @@ public class FishSchoolController : MonoBehaviour
     SpriteRenderer arrow;
     [SerializeField]
     AudioClip[] launchSounds;
+    [SerializeField]
+    Transform healthBar;
+    [SerializeField]
+    TextMeshPro nbrFishesText;
 
     //Values
     [SerializeField]
@@ -17,6 +22,12 @@ public class FishSchoolController : MonoBehaviour
     float distanceArrow;
     [SerializeField]
     float launchSpeed;
+    [SerializeField]
+    int damage;
+    [SerializeField]
+    int foodMax;
+    [SerializeField]
+    float foodConsomeSpeed;
 
     //Components
     Rigidbody2D myRigidboy;
@@ -25,14 +36,17 @@ public class FishSchoolController : MonoBehaviour
     //Variables
     public List<SmallFishController> fishes = new List<SmallFishController>();
     public Vector2 currentVelocity;
-    public float previousRightTriggerValue = 0f;
+    float previousRightTriggerValue = 0f;
     int previousLaunchSoundIndex = -1;
+    float currentFood;
 
 
     private void Awake()
     {
         myRigidboy = GetComponent<Rigidbody2D>();
         myAudioSource = GetComponent<AudioSource>();
+
+        currentFood = foodMax;
     }
 
     // Start is called before the first frame update
@@ -46,6 +60,8 @@ public class FishSchoolController : MonoBehaviour
     {
         Move();
         Aim();
+        ConsumeFood();
+        UpdateUI();
     }
 
     void Move()
@@ -78,6 +94,24 @@ public class FishSchoolController : MonoBehaviour
         }
 
         previousRightTriggerValue = Input.GetAxis("RightTrigger");
+    }
+
+    void ConsumeFood()
+    {
+        currentFood -= Time.deltaTime * (foodConsomeSpeed + fishes.Count);
+
+        if(currentFood <= 0)
+        {
+            fishes[0].Kill();
+            fishes.RemoveAt(0);
+            currentFood = foodMax + currentFood;
+        }
+    }
+
+    void UpdateUI()
+    {
+        nbrFishesText.text = fishes.Count.ToString();
+        healthBar.localScale = new Vector3(currentFood / foodMax, healthBar.localScale.y, healthBar.localScale.z);
     }
 
     void LaunchFish(Vector3 direction)
@@ -115,5 +149,16 @@ public class FishSchoolController : MonoBehaviour
             fishes.Add(fish);
             fish.Capture(this);
         }
+    }
+
+    public int GetDamage()
+    {
+        return damage;
+    }
+
+    public void GiveFood(int value)
+    {
+        currentFood += value;
+        currentFood = Mathf.Clamp(currentFood, 0, foodMax);
     }
 }

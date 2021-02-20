@@ -6,6 +6,10 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance = null;
 
+    //Instances
+    [SerializeField]
+    public GameObject fishFood;
+
     //Values
     public float smallFishSpeed;
     public float smallFishRotationSpeed;
@@ -13,6 +17,9 @@ public class GameManager : MonoBehaviour
     public float distanceAvoid;
     public float roamMinTime;
     public float roamMaxTime;
+    public float minForceFood;
+    public float maxForceFood;
+    public int foodValue;
 
     private void Awake()
     {

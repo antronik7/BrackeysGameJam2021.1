@@ -14,6 +14,7 @@ public class SmallFishController : MonoBehaviour
     FishSchoolController currentSchool;
     float currentSpeed;
     Vector2 flockVelocity = Vector2.zero;
+    int currentDamage = 0;
 
     private void Awake()
     {
@@ -47,9 +48,20 @@ public class SmallFishController : MonoBehaviour
     {
         if(gameObject.layer == 9)
         {
+            if (collision.gameObject.tag == "Piranha")
+                collision.gameObject.GetComponent<PiranhaController>().Damage(currentDamage, collision.transform.position - transform.position);//Debug.Log(collision.gameObject);//collision.gameObject.GetComponent<PiranhaController>().Damage(currentSchool.GetDamage(), collision.transform.position - transform.position);
+
             transform.rotation = Quaternion.identity;
             myRigidboy.velocity = Vector2.zero;
             gameObject.layer = 8;
+        }
+        else if (gameObject.layer == 7)
+        {
+            if (collision.gameObject.tag == "FishFood")
+            {
+                currentSchool.GiveFood(GameManager.instance.foodValue);
+                Destroy(collision.gameObject);
+            }
         }
     }
 
@@ -126,9 +138,15 @@ public class SmallFishController : MonoBehaviour
         //transform.position = currentSchool.transform.position;
         transform.rotation = Quaternion.FromToRotation(Vector3.right, velocity);
         myRigidboy.velocity = velocity;
+        currentDamage = currentSchool.GetDamage();
 
         Release();
         gameObject.layer = 9;
+    }
+
+    public void Kill()
+    {
+        Destroy(gameObject);
     }
 
     public bool IsFishInSchool()
