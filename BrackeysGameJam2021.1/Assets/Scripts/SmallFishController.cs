@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class SmallFishController : MonoBehaviour
 {
+    //Instances
+    [SerializeField]
+    DoorController door;
+
     //Components
     Rigidbody2D myRigidboy;
+    SpriteRenderer mySprite;
 
     //Variables
     bool isInSchool = false;
@@ -19,6 +24,7 @@ public class SmallFishController : MonoBehaviour
     private void Awake()
     {
         myRigidboy = GetComponent<Rigidbody2D>();
+        mySprite = GetComponent<SpriteRenderer>();
     }
 
     // Start is called before the first frame update
@@ -31,16 +37,24 @@ public class SmallFishController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(isInSchool)
+        if (gameObject.layer != 9)
         {
-            if (Random.Range(0, GameManager.instance.flockChance) < 1)
-                Flock();
+            if (isInSchool)
+            {
+                if (Random.Range(0, GameManager.instance.flockChance) < 1)
+                    Flock();
 
-            myRigidboy.velocity = flockVelocity  + currentSchool.currentVelocity;
-        }
-        else if(gameObject.layer == 8)
-        {
-            Roam();
+                myRigidboy.velocity = flockVelocity + currentSchool.currentVelocity;
+            }
+            else if (gameObject.layer == 8)
+            {
+                Roam();
+            }
+
+            if (myRigidboy.velocity.x >= 0)
+                mySprite.flipX = false;
+            else
+                mySprite.flipX = true;
         }
     }
 
@@ -52,6 +66,8 @@ public class SmallFishController : MonoBehaviour
                 collision.gameObject.GetComponent<PiranhaController>().Damage(currentDamage, collision.transform.position - transform.position);//Debug.Log(collision.gameObject);//collision.gameObject.GetComponent<PiranhaController>().Damage(currentSchool.GetDamage(), collision.transform.position - transform.position);
 
             transform.rotation = Quaternion.identity;
+            mySprite.flipX = false;
+            mySprite.flipY = false;
             myRigidboy.velocity = Vector2.zero;
             gameObject.layer = 8;
         }
@@ -60,7 +76,7 @@ public class SmallFishController : MonoBehaviour
             if (collision.gameObject.tag == "FishFood")
             {
                 currentSchool.GiveFood(GameManager.instance.foodValue);
-                Destroy(collision.gameObject);
+                collision.gameObject.GetComponent<FoodController>().Eat();
             }
         }
     }
@@ -124,6 +140,9 @@ public class SmallFishController : MonoBehaviour
         gameObject.layer = 7;
 
         Flock();
+
+        if (door != null)
+            door.IncrementObjective();
     }
 
     public void Release()
@@ -131,6 +150,9 @@ public class SmallFishController : MonoBehaviour
         isInSchool = false;
         currentSchool = null;
         gameObject.layer = 8;
+
+        if (door != null)
+            door.DecrementObjective();
     }
 
     public void Launch(Vector3 velocity)
@@ -139,6 +161,10 @@ public class SmallFishController : MonoBehaviour
         transform.rotation = Quaternion.FromToRotation(Vector3.right, velocity);
         myRigidboy.velocity = velocity;
         currentDamage = currentSchool.GetDamage();
+        mySprite.flipX = false;
+
+        if (velocity.x < 0 && transform.rotation.eulerAngles.y != 180)
+            mySprite.flipY = true;
 
         Release();
         gameObject.layer = 9;
@@ -146,6 +172,7 @@ public class SmallFishController : MonoBehaviour
 
     public void Kill()
     {
+        currentSchool.RemoveFish(this);
         Destroy(gameObject);
     }
 

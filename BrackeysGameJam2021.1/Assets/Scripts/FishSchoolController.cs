@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class FishSchoolController : MonoBehaviour
 {
@@ -13,7 +14,11 @@ public class FishSchoolController : MonoBehaviour
     [SerializeField]
     Transform healthBar;
     [SerializeField]
+    GameObject barUI;
+    [SerializeField]
     TextMeshPro nbrFishesText;
+    [SerializeField]
+    GameObject smallFish;
 
     //Values
     [SerializeField]
@@ -24,6 +29,8 @@ public class FishSchoolController : MonoBehaviour
     float launchSpeed;
     [SerializeField]
     int damage;
+    [SerializeField]
+    bool consumeFood;
     [SerializeField]
     int foodMax;
     [SerializeField]
@@ -77,7 +84,19 @@ public class FishSchoolController : MonoBehaviour
 
     void Aim()
     {
-        Vector3 aimDirection = new Vector2(Input.GetAxis("HorizontalRightStick"), Input.GetAxis("VerticalRightStick"));
+        Vector3 aimDirection = Vector3.zero;
+
+        if (ControllerManager.instance.playWithPad)
+        {
+            aimDirection = new Vector2(Input.GetAxis("HorizontalRightStick"), Input.GetAxis("VerticalRightStick"));
+        }
+        else
+        {
+            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            mousePosition = new Vector3(mousePosition.x, mousePosition.y, 0f);
+            aimDirection = (mousePosition - transform.position).normalized;
+        }
+
 
         if (aimDirection.sqrMagnitude > 0.0f)
         {
@@ -85,8 +104,16 @@ public class FishSchoolController : MonoBehaviour
             arrow.transform.position = transform.position + (aimDirection.normalized * distanceArrow);
             arrow.transform.rotation = Quaternion.FromToRotation(Vector3.up, aimDirection);
 
-            if (previousRightTriggerValue <= 0f && Input.GetAxis("RightTrigger") > 0f)
-                LaunchFish(aimDirection);
+            if (ControllerManager.instance.playWithPad)
+            {
+                if (previousRightTriggerValue <= 0f && Input.GetAxis("RightTrigger") > 0f)
+                    LaunchFish(aimDirection);
+            }
+            else
+            {
+                if (Input.GetMouseButtonDown(0))
+                    LaunchFish(aimDirection);
+            }
         }
         else
         {
@@ -98,14 +125,24 @@ public class FishSchoolController : MonoBehaviour
 
     void ConsumeFood()
     {
+        if (consumeFood == false)
+            return;
+
         currentFood -= Time.deltaTime * (foodConsomeSpeed + fishes.Count);
 
         if(currentFood <= 0)
         {
             fishes[0].Kill();
-            fishes.RemoveAt(0);
             currentFood = foodMax + currentFood;
         }
+    }
+
+    public void RemoveFish(SmallFishController fishToRemove)
+    {
+        fishes.Remove(fishToRemove);
+
+        if(fishes.Count <= 0)
+            SceneManager.LoadScene("End");
     }
 
     void UpdateUI()
@@ -116,7 +153,7 @@ public class FishSchoolController : MonoBehaviour
 
     void LaunchFish(Vector3 direction)
     {
-        if(fishes.Count > 0)
+        if(fishes.Count > 1)
         {
             SmallFishController fish = fishes[fishes.Count - 1];
             fishes.RemoveAt(fishes.Count - 1);
@@ -159,6 +196,16 @@ public class FishSchoolController : MonoBehaviour
     public void GiveFood(int value)
     {
         currentFood += value;
-        currentFood = Mathf.Clamp(currentFood, 0, foodMax);
+        if(currentFood > foodMax)
+        {
+            currentFood = 25f;
+            Instantiate(smallFish, transform.position, Quaternion.identity);
+        }
+    }
+
+    public void ActivateFood()
+    {
+        barUI.SetActive(true);
+        consumeFood = true;
     }
 }
